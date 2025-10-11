@@ -1,10 +1,10 @@
 services:
-    # kafka:
-    #     build: .
-    #     container_name: kafka
+    kafka:
+        image: apache/kafka:4.1.0
+        container_name: kafka
 
-    #     ports:
-    #         - "8000:8000"
+        ports:
+            - "9092:9092"
 
     #     env_file:
     #         - ./.env
@@ -30,7 +30,10 @@ services:
 
                 - action: rebuild
                   path: ./orders/uv.lock
-    
+        
+        depends_on:
+            - kafka
+
     
     web_payment:
         build: ./payment
@@ -52,6 +55,9 @@ services:
 
                 - action: rebuild
                   path: ./payment/uv.lock
+        
+        depends_on:
+            - kafka
     
     
     web_shipping:
@@ -74,6 +80,9 @@ services:
 
                 - action: rebuild
                   path: ./shipping/uv.lock
+        
+        depends_on:
+            - kafka
     
     
     web_notifications:
@@ -96,3 +105,6 @@ services:
 
                 - action: rebuild
                   path: ./notifications/uv.lock
+        
+        depends_on:
+            - kafka
