@@ -1,0 +1,98 @@
+services:
+    # kafka:
+    #     build: .
+    #     container_name: kafka
+
+    #     ports:
+    #         - "8000:8000"
+
+    #     env_file:
+    #         - ./.env
+
+
+    web_orders:
+        build: ./orders
+        container_name: web_orders
+
+        ports:
+            - "8001:8000"
+
+        env_file:
+            - ./.env
+
+        develop:
+            watch:
+                - action: sync
+                  path: ./orders/src
+                  target: /orders/src
+                  ignore:
+                      - .venv/
+
+                - action: rebuild
+                  path: ./orders/uv.lock
+    
+    
+    web_payment:
+        build: ./payment
+        container_name: web_payment
+
+        ports:
+            - "8002:8000"
+
+        env_file:
+            - ./.env
+
+        develop:
+            watch:
+                - action: sync
+                  path: ./payment/src
+                  target: /payment/src
+                  ignore:
+                      - .venv/
+
+                - action: rebuild
+                  path: ./payment/uv.lock
+    
+    
+    web_shipping:
+        build: ./shipping
+        container_name: web_shipping
+
+        ports:
+            - "8003:8000"
+
+        env_file:
+            - ./.env
+
+        develop:
+            watch:
+                - action: sync
+                  path: ./shipping/src
+                  target: /shipping/src
+                  ignore:
+                      - .venv/
+
+                - action: rebuild
+                  path: ./shipping/uv.lock
+    
+    
+    web_notifications:
+        build: ./notifications
+        container_name: web_notifications
+
+        ports:
+            - "8004:8000"
+
+        env_file:
+            - ./.env
+
+        develop:
+            watch:
+                - action: sync
+                  path: ./notifications/src
+                  target: /notifications/src
+                  ignore:
+                      - .venv/
+
+                - action: rebuild
+                  path: ./notifications/uv.lock
