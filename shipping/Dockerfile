@@ -28,5 +28,5 @@ ENV PYTHONPATH=/shipping/src
 # Reset the entrypoint, don't invoke `uv`
 ENTRYPOINT []
 
-CMD ["fastapi", "run", "src/main.py", "--port", "8000"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 # CMD ["tail", "-f", "/dev/null"]

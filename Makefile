@@ -24,7 +24,7 @@ build-%:
 	docker compose build $*
 
 up-%: build-%
-	docker compose up $*
+	docker compose up $* --watch
 
 restart-%: 
 	docker compose restart $*
@@ -35,6 +35,6 @@ logs-%:
 
 
 
-docker_shell-%:
+dockershell-%:
 	$(DOCKER_EXEC) $* bash
 

@@ -6,8 +6,21 @@ services:
         ports:
             - "9092:9092"
 
-    #     env_file:
-    #         - ./.env
+        env_file:
+            - ./.env
+
+    kafka_ui:
+        image: provectuslabs/kafka-ui:latest
+        container_name: kafka_ui
+
+        ports:
+            - "8080:8080"
+
+        env_file:
+            - ./.env
+        
+        depends_on:
+            - kafka
 
 
     web_orders:
@@ -18,7 +31,7 @@ services:
             - "8001:8000"
 
         env_file:
-            - ./.env
+            - ./orders/.env
 
         develop:
             watch:
@@ -43,7 +56,7 @@ services:
             - "8002:8000"
 
         env_file:
-            - ./.env
+            - ./payment/.env
 
         develop:
             watch:
@@ -68,7 +81,7 @@ services:
             - "8003:8000"
 
         env_file:
-            - ./.env
+            - ./shipping/.env
 
         develop:
             watch:
@@ -93,7 +106,7 @@ services:
             - "8004:8000"
 
         env_file:
-            - ./.env
+            - ./notifications/.env
 
         develop:
             watch:
