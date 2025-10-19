@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from src.config.app import ENV_FILE
 
 
