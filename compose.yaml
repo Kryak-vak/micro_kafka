@@ -23,6 +23,27 @@ services:
             - kafka
 
 
+    schema_registry:
+        image: confluentinc/cp-schema-registry:7.5.0
+        container_name: schema-registry
+        
+        ports:
+            - "8081:8081"
+
+        depends_on:
+            - kafka
+    
+    
+    redis:
+        image: redis:8.0.3-alpine
+        container_name: redis
+        
+        ports:
+            - "6379:6379"
+        
+        restart: unless-stopped
+
+
     web_orders:
         build: ./orders
         container_name: web_orders
@@ -46,6 +67,8 @@ services:
         
         depends_on:
             - kafka
+            - schema_registry
+            - redis
 
     
     web_payment:
@@ -71,6 +94,8 @@ services:
         
         depends_on:
             - kafka
+            - schema_registry
+            - redis
     
     
     web_shipping:
@@ -96,6 +121,8 @@ services:
         
         depends_on:
             - kafka
+            - schema_registry
+            - redis
     
     
     web_notifications:
@@ -121,3 +148,5 @@ services:
         
         depends_on:
             - kafka
+            - schema_registry
+            - redis
