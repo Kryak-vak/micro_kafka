@@ -3,7 +3,7 @@ import logging
 from uuid import UUID, uuid4
 
 from confluent_kafka import Message
-from confluent_kafka.error import KafkaError
+from confluent_kafka.error import KafkaError, KafkaException
 from confluent_kafka.serialization import (
     MessageField,
     SerializationContext,
@@ -14,6 +14,14 @@ from src.config.kafka import TopicsEnum
 from src.infra.kafka.producers import order_producer
 from src.infra.kafka.registry import order_json_serializer, string_serializer
 from src.infra.redis.repositories import RedisLogRepository, RedisOrderRepository
+from src.utils import is_retriable_kafka_error
+from tenacity import (
+    retry,
+    retry_if_exception,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,19 +81,36 @@ class OrderProduceService:
         )
 
         try:
+            self._produce_with_retry(topic, key, value) # type: ignore
+        except (KafkaException, BufferError) as e:
+            self._log(
+                "exception",
+                f"Kafka produce failed after retries: {e}",
+                to_task=True
+            )
+    
+    @retry(
+        retry=(
+            retry_if_exception(is_retriable_kafka_error) |
+            retry_if_exception_type(BufferError)
+        ),
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=0.5, min=1, max=10),
+        reraise=True,
+    )
+    def _produce_with_retry(self, topic: str, key: bytes, value: bytes) -> None:
+        try:
             order_producer.produce(
-                topic=TopicsEnum.NEW_ORDERS,
+                topic=topic,
                 key=key,
                 value=value,
                 on_delivery=self.delivery_report
             )
-        except BufferError as e:
-            self._log(
-                "exception",
-                f"Producer queue is full: {e}"
-            )
-        
-        order_producer.poll(0)
+        except BufferError:
+            order_producer.poll(1)
+            raise
+        else:
+            order_producer.poll(0)
     
     async def _update_order_status(self, order_id: UUID, status: OrderStatus) -> None:
         await self.order_repo.create(str(order_id), status)

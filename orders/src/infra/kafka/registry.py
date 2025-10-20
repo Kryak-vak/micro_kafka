@@ -17,7 +17,7 @@ def str_to_dict(dto: BaseModel):
 
 def creat_json_serializer(schema_str):
     return JSONSerializer(
-        schema_str, schema_registry_client, str_to_dict
+        schema_str, schema_registry_client, str_to_dict # type: ignore
     )
 
 
