@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from uuid import UUID, uuid4
 
@@ -7,20 +8,25 @@ from confluent_kafka.serialization import (
     MessageField,
     SerializationContext,
 )
-from fastapi.concurrency import run_in_threadpool
 from src.application.orders.dto import OrderBaseDTO, OrderDTO
 from src.common_types import OrderStatus
 from src.config.kafka import TopicsEnum
 from src.infra.kafka.producers import order_producer
 from src.infra.kafka.registry import order_json_serializer, string_serializer
-from src.infra.redis.repositories import RedisOrderRepository
+from src.infra.redis.repositories import RedisLogRepository, RedisOrderRepository
 
 logger = logging.getLogger(__name__)
 
 
-class OrderService:
-    def __init__(self, redis_repo: RedisOrderRepository):
-        self.redis_repo = redis_repo
+class OrderProduceService:
+    def __init__(
+            self,
+            order_repo: RedisOrderRepository,
+            log_repo: RedisLogRepository
+        
+    ) -> None:
+        self.order_repo = order_repo
+        self.log_repo = log_repo
 
     async def handle_order(self, order_in: OrderBaseDTO) -> UUID:
         order_id = uuid4()
@@ -30,26 +36,32 @@ class OrderService:
             **order_in.model_dump()
         )
 
-        await run_in_threadpool(self.send_order_to_topic, order_dto)
-        await self.redis_repo.create(str(order_dto.id), OrderStatus.PENDING)
+        self.send_order_to_topic(order_dto)
+        await self._update_order_status(order_dto.id, OrderStatus.PENDING)
 
         return order_id
 
-    def order_to_dict(self, order_dto: OrderDTO) -> dict:
-        return order_dto.model_dump()
-
-    @staticmethod
-    def delivery_report(err: KafkaError, msg: Message) -> None:
+    def delivery_report(self, err: KafkaError, msg: Message) -> None:
         if err is not None:
-            logger.exception(f"Delivery failed for Order {msg.key()}: {err}")
+            self._create_status_task(msg.key(), OrderStatus.FAILED)
+
+            self._log(
+                "error",
+                f"Delivery failed for Order {msg.key()}: {err}",
+                to_task=True
+            )
             return
         
-        logger.info(
-            f"Order {msg.key()} successfully produced to "
-            f"{msg.topic()} [{msg.partition()}] at offset {msg.offset()}"
+        self._create_status_task(msg.key(), OrderStatus.ACCEPTED)
+
+        self._log(
+            "info",
+            (f"Order {msg.key()} successfully produced to "
+             f"{msg.topic()} [{msg.partition()}] at offset {msg.offset()}"),
+            to_task=True
         )
 
-    async def send_order_to_topic(self, order_dto: OrderDTO) -> None:
+    def send_order_to_topic(self, order_dto: OrderDTO) -> None:
         topic = TopicsEnum.NEW_ORDERS
         key = string_serializer(
             str(order_dto.id),
@@ -68,8 +80,35 @@ class OrderService:
                 on_delivery=self.delivery_report
             )
         except BufferError as e:
-            logger.exception(f"Producer queue is full: {e}")
+            self._log(
+                "exception",
+                f"Producer queue is full: {e}"
+            )
         
         order_producer.poll(0)
+    
+    async def _update_order_status(self, order_id: UUID, status: OrderStatus) -> None:
+        await self.order_repo.create(str(order_id), status)
+    
+    def _create_status_task(self, order_id: UUID, status: OrderStatus) -> None:
+        asyncio.create_task(self._update_order_status(order_id, status))
+    
+    def _log(self, level: str, log_message: str, to_task: bool = False) -> None:
+        logger_funcs = {
+            "info": logger.info,
+            "error": logger.error,
+            "exception": logger.exception
+        }
+
+        logger_func = logger_funcs.get(level)
+        assert logger_func is not None
+
+        logger_func(log_message)
+
+        if to_task:
+            self._create_log_task(level, log_message)
+
+    def _create_log_task(self, level: str, log_message: str) -> None:
+        asyncio.create_task(self.log_repo.create(level, log_message))
 
 

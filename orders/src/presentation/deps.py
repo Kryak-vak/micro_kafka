@@ -1,6 +1,6 @@
 from redis.asyncio import Redis
 
-from src.infra.redis.base import redis_client
+from src.infra.redis.clients import redis_client
 
 
 def get_redis_client() -> Redis:

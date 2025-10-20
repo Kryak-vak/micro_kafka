@@ -1,4 +1,5 @@
 from redis.asyncio.client import Redis
+
 from src.config.redis import redis_config
 
 redis_client = Redis(

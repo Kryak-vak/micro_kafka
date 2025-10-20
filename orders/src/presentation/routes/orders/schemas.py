@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from pydantic import BaseModel
+
 from src.common_types import OrderStatus
 
 

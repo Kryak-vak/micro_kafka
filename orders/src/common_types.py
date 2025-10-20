@@ -6,4 +6,5 @@ class OrderStatus(StrEnum):
     FAILED = "failed"
     PENDING = "pending"
     SHIPPED = "shipped"
+    COMPLETED = "completed"
 
