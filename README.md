@@ -9,7 +9,7 @@
 
 [/orders/]
 
-[Producer logic](./orders/src/application/orders/services.py)
+[Producer logic file](./orders/src/application/orders/services.py)
 
 -   Принимает информацию о заказе, сразу (не совсем) отдаёт ответ с id заказа
 -   Добавляет заказ и его статус в бд (redis для простоты)
