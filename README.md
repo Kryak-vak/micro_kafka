@@ -29,6 +29,6 @@
 [/orders/{order_id}]
 
 -   Возвращает текущий статус заказа <br>
-    Изначально Pending -> Accepted либо Failed после отправки сообщения в топик либо accepted либо failed
+    Изначально Pending -> Accepted либо Failed после отправки сообщения в топик
 
 -   Возвращает 404 если неверный order_id
