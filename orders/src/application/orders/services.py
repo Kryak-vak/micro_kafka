@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from typing import cast
 from uuid import UUID, uuid4
 
 from confluent_kafka import Message
