@@ -24,11 +24,14 @@ services:
 
 
     schema_registry:
-        image: confluentinc/cp-schema-registry:7.5.0
+        image: confluentinc/cp-schema-registry:8.1.0
         container_name: schema-registry
         
         ports:
             - "8081:8081"
+
+        env_file:
+            - ./.env
 
         depends_on:
             - kafka
