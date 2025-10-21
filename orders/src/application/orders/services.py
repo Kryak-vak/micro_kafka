@@ -47,6 +47,7 @@ class OrderProduceService:
             **order_in.model_dump()
         )
 
+        # TODO Make method async / run in background. In case of retries can block up to several seconds
         self.send_order_to_topic(order_dto)
         await self._update_order_status(order_dto.id, OrderStatus.PENDING)
 
@@ -78,6 +79,8 @@ class OrderProduceService:
 
     def send_order_to_topic(self, order_dto: OrderDTO) -> None:
         topic = TopicsEnum.NEW_ORDERS
+
+        # TODO Serialization error handling
         key = string_serializer(
             str(order_dto.id),
             SerializationContext(topic, MessageField.KEY)
@@ -129,6 +132,7 @@ class OrderProduceService:
         )
     
     def _log(self, level: str, log_message: str, to_task: bool = False) -> None:
+        # TODO Upgrade logger logic to a special Logger class to avoid this atrocity
         logger_funcs = {
             "info": logger.info,
             "error": logger.error,
