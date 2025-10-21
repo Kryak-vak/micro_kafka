@@ -5,13 +5,14 @@ from redis.asyncio.client import Redis
 from src.infra.redis.mixins import (
     BaseKeyValueRepository,
     BaseStreamRepository,
+    KeyGetDeleteMixin,
     KeySetMixin,
     RedisPrimitive,
     StreamProduceMixin,
 )
 
 
-class RedisOrderRepository(BaseKeyValueRepository, KeySetMixin):
+class RedisOrderRepository(BaseKeyValueRepository, KeySetMixin, KeyGetDeleteMixin):
     def __init__(self, redis_client: Redis) -> None:
         super().__init__(
             redis_client=redis_client,

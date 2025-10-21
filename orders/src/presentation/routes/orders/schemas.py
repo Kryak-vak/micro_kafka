@@ -18,8 +18,12 @@ class OrderItemIn(BaseModel):
     count: int
 
 
-class OrderAcceptedResponse(BaseModel):
+class OrderInfo(BaseModel):
+    id: UUID
     status: OrderStatus
+
+
+class OrderAcceptedResponse(BaseModel):
     message: str
-    order_id: UUID
+    order: OrderInfo
 

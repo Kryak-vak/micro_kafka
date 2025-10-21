@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import cast
 from uuid import UUID, uuid4
 
 from confluent_kafka import Message
@@ -9,12 +10,14 @@ from confluent_kafka.serialization import (
     SerializationContext,
 )
 from src.application.orders.dto import OrderBaseDTO, OrderDTO
+from src.application.orders.exceptions import OrderNotFoundException
 from src.common_types import OrderStatus
 from src.config.kafka import TopicsEnum
 from src.infra.kafka.producers import order_producer
 from src.infra.kafka.registry import order_json_serializer, string_serializer
 from src.infra.redis.repositories import RedisLogRepository, RedisOrderRepository
-from src.utils import is_retriable_kafka_error
+from src.utils.event_loop import get_main_loop
+from src.utils.kafka import is_retriable_kafka_error
 from tenacity import (
     retry,
     retry_if_exception,
@@ -30,11 +33,12 @@ class OrderProduceService:
     def __init__(
             self,
             order_repo: RedisOrderRepository,
-            log_repo: RedisLogRepository
-        
+            log_repo: RedisLogRepository,
+            # loop: AbstractEventLoop | None = None,
     ) -> None:
         self.order_repo = order_repo
         self.log_repo = log_repo
+        # self.loop = loop or asyncio.get_running_loop()
 
     async def handle_order(self, order_in: OrderBaseDTO) -> UUID:
         order_id = uuid4()
@@ -50,22 +54,26 @@ class OrderProduceService:
         return order_id
 
     def delivery_report(self, err: KafkaError, msg: Message) -> None:
+        key = UUID(msg.key().decode("utf-8"))
+        partition = msg.partition().decode("utf-8") if msg.partition() else None
+        offset = msg.offset()
+
         if err is not None:
-            self._create_status_task(msg.key(), OrderStatus.FAILED)
+            self._create_status_task(key, OrderStatus.FAILED)
 
             self._log(
                 "error",
-                f"Delivery failed for Order {msg.key()}: {err}",
+                f"Delivery failed for Order {key}: {err}",
                 to_task=True
             )
             return
         
-        self._create_status_task(msg.key(), OrderStatus.ACCEPTED)
+        self._create_status_task(key, OrderStatus.ACCEPTED)
 
         self._log(
             "info",
-            (f"Order {msg.key()} successfully produced to "
-             f"{msg.topic()} [{msg.partition()}] at offset {msg.offset()}"),
+            (f"Order {key} successfully produced to "
+             f"{msg.topic()} [{partition}] at offset {offset}"),
             to_task=True
         )
 
@@ -116,7 +124,10 @@ class OrderProduceService:
         await self.order_repo.create(str(order_id), status)
     
     def _create_status_task(self, order_id: UUID, status: OrderStatus) -> None:
-        asyncio.create_task(self._update_order_status(order_id, status))
+        asyncio.run_coroutine_threadsafe(
+            self._update_order_status(order_id, status),
+            get_main_loop()
+        )
     
     def _log(self, level: str, log_message: str, to_task: bool = False) -> None:
         logger_funcs = {
@@ -134,6 +145,25 @@ class OrderProduceService:
             self._create_log_task(level, log_message)
 
     def _create_log_task(self, level: str, log_message: str) -> None:
-        asyncio.create_task(self.log_repo.create(level, log_message))
+        asyncio.run_coroutine_threadsafe(
+            self.log_repo.create(level, log_message),
+            get_main_loop()
+        )
 
+
+class OrderStatusService:
+    def __init__(
+            self,
+            order_repo: RedisOrderRepository,
+        
+    ) -> None:
+        self.order_repo = order_repo
+    
+    async def get_order_status(self, order_id: UUID) -> OrderStatus:
+        status = await self.order_repo.get(str(order_id))
+
+        if not status:
+            raise OrderNotFoundException(order_id=order_id)
+        
+        return OrderStatus(status)
 

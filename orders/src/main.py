@@ -1,3 +1,7 @@
+
+import asyncio
+import logging
+import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -9,10 +13,17 @@ from src.infra.kafka.producers import (
     producer_teardown,
 )
 from src.presentation.router import router as main_router
+from src.utils.event_loop import set_main_loop
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    stream=sys.stdout
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    set_main_loop()
     polling_loop_start()
     
     yield

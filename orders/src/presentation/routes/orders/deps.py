@@ -1,7 +1,7 @@
 from fastapi import Depends
 from redis.asyncio import Redis
 
-from src.application.orders.services import OrderProduceService
+from src.application.orders.services import OrderProduceService, OrderStatusService
 from src.infra.redis.repositories import RedisLogRepository, RedisOrderRepository
 from src.presentation.deps import get_redis_client
 
@@ -24,4 +24,12 @@ def get_order_produce_service(
     return OrderProduceService(
         order_repo=redis_repo,
         log_repo=log_repo
+    )
+
+
+def get_order_status_service(
+        redis_repo: RedisOrderRepository = Depends(get_order_repo),
+    ) -> OrderStatusService:
+    return OrderStatusService(
+        order_repo=redis_repo,
     )
