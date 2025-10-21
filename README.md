@@ -20,8 +20,7 @@
     Retry срабатывает при BufferError и всех "retriable" исключениях. Возможно не учел еще важные кейсы.
 
 -   Логирование через logger и в redis stream.
-    В delivery callback'е логирование и обновление статуса через run_coroutine_threadsafe <br>
-    т.к. асинхронный редис.
+    В delivery callback'е логирование и обновление статуса через run_coroutine_threadsafe т.к. асинхронный редис.
 
 ## GET
 
