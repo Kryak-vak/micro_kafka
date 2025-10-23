@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.config.app import app_config
+# from src.config.app import app_config
 from src.infra.kafka.producers import (
     polling_loop_start,
     polling_loop_stop,

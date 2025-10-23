@@ -5,7 +5,7 @@
 
 -   [Orders](./orders/) - микросервис создания заказов
 
-Микросервисы по структуре представляют Onion (presentation -> application -> infra)
+Микросервисы по структуре layered architechute (presentation -> application -> infra)
 
 ## POST
 
