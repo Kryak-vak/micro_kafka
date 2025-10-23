@@ -35,6 +35,29 @@ services:
 
         depends_on:
             - kafka
+
+    db:
+        image: postgres:17-alpine
+        container_name: kafka_micro_db
+        
+        environment:
+            POSTGRES_USER: ${DB_USER}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            POSTGRES_DB: ${DB_NAME}
+
+        env_file:
+            - ./.env
+
+        volumes:
+            - postgres-data_kafka_micro_db:/var/lib/postgresql/data
+
+        ports:
+            - "${DB_PORT}:5432"
+
+        restart: always
+        
+        logging:
+            driver: "none"
     
     
     redis:
@@ -71,6 +94,7 @@ services:
         depends_on:
             - kafka
             - schema_registry
+            - db
             - redis
 
     
@@ -98,6 +122,7 @@ services:
         depends_on:
             - kafka
             - schema_registry
+            - db
             - redis
     
     
@@ -125,6 +150,7 @@ services:
         depends_on:
             - kafka
             - schema_registry
+            - db
             - redis
     
     
@@ -152,4 +178,9 @@ services:
         depends_on:
             - kafka
             - schema_registry
+            - db
             - redis
+
+
+volumes:
+    postgres-data_kafka_micro_db:
