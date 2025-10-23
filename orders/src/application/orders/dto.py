@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -18,4 +19,14 @@ class OrderItemDTO(BaseModel):
     price: int
     
     count: int
+
+
+class OutboxMessageDTO(BaseModel):
+    id: UUID
+
+    topic: str
+    payload: dict
+
+    sent: bool = False
+    sent_at: datetime | None = None
 
