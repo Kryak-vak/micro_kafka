@@ -38,6 +38,7 @@ schema_registry_config = SchemaRegistryConfig().model_dump()  # type: ignore
 order_producer_config = {
     'bootstrap.servers': kafka_config.bootstrap_server,
     'enable.idempotence': True,
+    'acks': 1,
 }
 
 
