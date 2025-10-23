@@ -1,7 +1,17 @@
+from datetime import datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import Enum, ForeignKey, MetaData, Numeric
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    MetaData,
+    Numeric,
+    String,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from src.common_types import OrderStatus
@@ -48,7 +58,7 @@ class Item(Base):
     order_id: Mapped[UUID] = mapped_column(ForeignKey("orders.id"))
     order: Mapped["Order"] = relationship(back_populates="items")
 
-    name: Mapped[str]
+    name: Mapped[str] = mapped_column(String(255))
     price: Mapped[Decimal] = mapped_column(
         Numeric(precision=10, scale=2), default=Decimal("0.00"), nullable=False
     )
@@ -56,3 +66,21 @@ class Item(Base):
 
     def __repr__(self):
         return f"<Item(id={self.id}, name{self.name})>"
+
+
+class OutboxMessage(Base):
+    __tablename__ = "outbox_message"
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    topic: Mapped[str] = mapped_column(String(255))
+    payload: Mapped[dict] = mapped_column(JSON)
+
+    sent: Mapped[bool] = mapped_column(default=False)
+    sent_at: Mapped[datetime] = mapped_column(nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<OutboxMessage(topic='{self.topic}', sent={self.sent})>"
