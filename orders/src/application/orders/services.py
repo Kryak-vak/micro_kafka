@@ -9,9 +9,9 @@ from confluent_kafka.serialization import (
     SerializationContext,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-from src.application.orders.dto import OrderBaseDTO, OrderDTO
+from src.application.orders.dto import OrderBaseDTO, OrderDTO, OutboxMessageDTO
 from src.application.orders.exceptions import OrderNotFoundException
-from src.common_types import OrderStatus
+from src.common_types import OrderStatus, OutboxTopic
 from src.config.kafka import TopicsEnum
 from src.infra.db.repositories import OrderRepository, OutboxRepository
 from src.infra.kafka.producers import order_producer
@@ -40,6 +40,7 @@ class OrderProduceService:
     ) -> None:
         self.session = session
         self.order_repo = order_repo
+        self.outbox_repo = outbox_repo
         self.log_repo = log_repo
 
     async def handle_order(self, order_in: OrderBaseDTO) -> UUID:
@@ -47,14 +48,25 @@ class OrderProduceService:
 
         order_dto = OrderDTO(
             id=order_id,
+            status=OrderStatus.PENDING,
             **order_in.model_dump()
         )
+        outbox_dto = OutboxMessageDTO(
+            topic=OutboxTopic.ORDERS,
+            payload=order_dto.model_dump()
+        )
 
-        # TODO Make method async / run in background. In case of retries can block up to several seconds
-        self.send_order_to_topic(order_dto)
-        await self._update_order_status(order_dto.id, OrderStatus.PENDING)
+        await self.create_order(order_dto, outbox_dto)
 
         return order_id
+    
+    async def create_order(
+        self, order_dto: OrderDTO, outbox_dto: OutboxMessageDTO
+    ) -> None:
+        # TODO handle/log exceptions
+        async with self.session.begin():
+            await self.order_repo.create(order_dto)
+            await self.outbox_repo.create(outbox_dto)
 
     def delivery_report(self, err: KafkaError, msg: Message) -> None:
         key = UUID(msg.key().decode("utf-8"))

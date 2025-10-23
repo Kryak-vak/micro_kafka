@@ -8,3 +8,7 @@ class OrderStatus(StrEnum):
     SHIPPED = "shipped"
     COMPLETED = "completed"
 
+
+class OutboxTopic(StrEnum):
+    ORDERS = "orders"
+

@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
+from src.common_types import OrderStatus, OutboxTopic
 
 
 class OrderBaseDTO(BaseModel):
@@ -12,6 +13,7 @@ class OrderBaseDTO(BaseModel):
 
 class OrderDTO(OrderBaseDTO):
     id: UUID
+    status: OrderStatus
 
 
 class OrderItemDTO(BaseModel):
@@ -22,9 +24,9 @@ class OrderItemDTO(BaseModel):
 
 
 class OutboxMessageDTO(BaseModel):
-    id: UUID
+    id: UUID | None = None
 
-    topic: str
+    topic: OutboxTopic
     payload: dict
 
     sent: bool = False
