@@ -2,7 +2,7 @@ from fastapi import Depends
 from redis.asyncio import Redis
 
 from src.application.orders.services import OrderProduceService, OrderStatusService
-from src.infra.db.repositories import OrderRepository
+from src.infra.db.repositories import OrderRepository, OutboxRepository
 from src.infra.redis.repositories import RedisLogRepository, RedisOrderRepository
 from src.presentation.deps import SessionDep, get_redis_client
 
@@ -11,6 +11,12 @@ def get_order_repo(
     session: SessionDep
 ) -> OrderRepository:
     return OrderRepository(session=session)
+
+
+def get_outbox_repo(
+    session: SessionDep
+) -> OutboxRepository:
+    return OutboxRepository(session=session)
 
 
 def get_redis_repo(
@@ -33,11 +39,13 @@ def get_log_repo(
 def get_order_produce_service(
     session: SessionDep,
     order_repo: OrderRepository = Depends(get_order_repo),
+    outbox_repo: OutboxRepository = Depends(get_outbox_repo),
     log_repo: RedisLogRepository = Depends(get_log_repo),
 ) -> OrderProduceService:
     return OrderProduceService(
         session=session,
         order_repo=order_repo,
+        outbox_repo=outbox_repo,
         log_repo=log_repo
     )
 

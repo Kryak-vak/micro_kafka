@@ -13,7 +13,7 @@ from src.application.orders.dto import OrderBaseDTO, OrderDTO
 from src.application.orders.exceptions import OrderNotFoundException
 from src.common_types import OrderStatus
 from src.config.kafka import TopicsEnum
-from src.infra.db.repositories import OrderRepository
+from src.infra.db.repositories import OrderRepository, OutboxRepository
 from src.infra.kafka.producers import order_producer
 from src.infra.kafka.registry import order_json_serializer, string_serializer
 from src.infra.redis.repositories import RedisLogRepository, RedisOrderRepository
@@ -35,6 +35,7 @@ class OrderProduceService:
             self,
             session: AsyncSession,
             order_repo: OrderRepository,
+            outbox_repo: OutboxRepository,
             log_repo: RedisLogRepository,
     ) -> None:
         self.session = session
