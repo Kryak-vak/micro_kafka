@@ -8,10 +8,12 @@ from confluent_kafka.serialization import (
     MessageField,
     SerializationContext,
 )
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.application.orders.dto import OrderBaseDTO, OrderDTO
 from src.application.orders.exceptions import OrderNotFoundException
 from src.common_types import OrderStatus
 from src.config.kafka import TopicsEnum
+from src.infra.db.repositories import OrderRepository
 from src.infra.kafka.producers import order_producer
 from src.infra.kafka.registry import order_json_serializer, string_serializer
 from src.infra.redis.repositories import RedisLogRepository, RedisOrderRepository
@@ -31,13 +33,13 @@ logger = logging.getLogger(__name__)
 class OrderProduceService:
     def __init__(
             self,
-            order_repo: RedisOrderRepository,
+            session: AsyncSession,
+            order_repo: OrderRepository,
             log_repo: RedisLogRepository,
-            # loop: AbstractEventLoop | None = None,
     ) -> None:
+        self.session = session
         self.order_repo = order_repo
         self.log_repo = log_repo
-        # self.loop = loop or asyncio.get_running_loop()
 
     async def handle_order(self, order_in: OrderBaseDTO) -> UUID:
         order_id = uuid4()
@@ -156,11 +158,12 @@ class OrderProduceService:
 
 class OrderStatusService:
     def __init__(
-            self,
-            order_repo: RedisOrderRepository,
-        
+        self,
+        order_repo: OrderRepository,
+        redis_repo: RedisOrderRepository,
     ) -> None:
         self.order_repo = order_repo
+        self.redis_repo = redis_repo
     
     async def get_order_status(self, order_id: UUID) -> OrderStatus:
         status = await self.order_repo.get(str(order_id))
