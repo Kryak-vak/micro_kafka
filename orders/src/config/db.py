@@ -10,7 +10,7 @@ from src.config.app import ENV_FILE
 
 class DBConfig(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="POSTGRES_",
+        env_prefix="DB_",
         env_file=ENV_FILE,
         extra="ignore"
     )

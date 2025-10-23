@@ -53,7 +53,7 @@ class OrderProduceService:
         )
         outbox_dto = OutboxMessageDTO(
             topic=OutboxTopic.ORDERS,
-            payload=order_dto.model_dump()
+            payload=order_dto.model_dump(mode="json")
         )
 
         await self.create_order(order_dto, outbox_dto)
@@ -179,10 +179,10 @@ class OrderStatusService:
         self.redis_repo = redis_repo
     
     async def get_order_status(self, order_id: UUID) -> OrderStatus:
-        status = await self.order_repo.get(str(order_id))
+        order_dto = await self.order_repo.get(id=order_id)
 
-        if not status:
+        if not order_dto:
             raise OrderNotFoundException(order_id=order_id)
         
-        return OrderStatus(status)
+        return order_dto.status
 

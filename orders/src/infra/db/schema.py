@@ -34,10 +34,10 @@ class Order(Base):
 
     id: Mapped[UUID] = mapped_column(default=uuid4, primary_key=True)
 
-    user_id: Mapped[UUID] = mapped_column(default=uuid4, primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(default=uuid4)
 
     items: Mapped[list["Item"]] = relationship(
-        back_populates="wallet", cascade="all, delete-orphan"
+        back_populates="order", cascade="all, delete-orphan"
     )
 
     status: Mapped[OrderStatus] = mapped_column(

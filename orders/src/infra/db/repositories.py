@@ -5,7 +5,7 @@ from sqlalchemy import insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.orders.dto import OrderDTO, OutboxMessageDTO
-from src.infra.db.schema import Order, OutboxMessage
+from src.infra.db.schema import Item, Order, OutboxMessage
 
 
 class OrderRepository:
@@ -18,7 +18,7 @@ class OrderRepository:
     async def create(self, dto: OrderDTO):
         stmt = (
             insert(self.schema)
-            .values(dto.model_dump())
+            .values(dto.model_dump(exclude={"items"}))
             .returning(self.schema)
         )
 
@@ -45,7 +45,13 @@ class OrderRepository:
         return self._to_dto(obj) if obj else None
     
     def _to_dto(self, obj: Order, from_attributes: bool = True) -> OrderDTO:
-        return self.dto.model_validate(obj, from_attributes=from_attributes)
+        # return self.dto.model_validate(obj, from_attributes=from_attributes)
+        return self.dto(
+            id=obj.id,
+            user_id=obj.user_id,
+            status=obj.status,
+            items=[]
+        )
 
 
 class OutboxRepository:

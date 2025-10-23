@@ -32,6 +32,14 @@ restart-%:
 logs-%:
 	docker compose logs $*
 
+migrations: build
+	$(DOCKER_RUN) uv run alembic revision --autogenerate
+	
+migrate:
+	$(DOCKER_RUN) uv run alembic upgrade head
+
+auto_migrate: migrations migrate
+
 
 
 

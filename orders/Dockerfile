@@ -14,6 +14,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project --no-dev
 
 COPY ./src/ ./src/
+COPY ./migrations/ ./migrations/
+COPY ./alembic.ini ./alembic.ini
 COPY ./pyproject.toml ./pyproject.toml
 COPY ./uv.lock ./uv.lock
 
