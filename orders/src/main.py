@@ -31,11 +31,12 @@ async def lifespan(app: FastAPI):
     producer_teardown()
 
 
-app = FastAPI(lifespan=lifespan)
-app.include_router(main_router)
+def create_app() -> FastAPI:
+    app = FastAPI(lifespan=lifespan)
+    app.include_router(main_router)
+
+    return app
 
 
-@app.get("/")
-def root():
-    return f"Hello from {app_config.project_name}"
+app = create_app()
 
